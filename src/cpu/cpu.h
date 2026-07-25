@@ -61,19 +61,34 @@ private:
 
     // Instruciones...
 
-    // BLOQUE LD
     void op_nop();
+
+    // BLOQUE LD
+    
     void op_ld_r8_imm8(uint8_t& reg);
-    void op_ld_r16_imm16(uint8_t& reg_high, uint8_t& reg_low);
     void op_ld_r8_r8(uint8_t& reg1, uint8_t& reg2);
-    void op_ld_r16mem_r8(uint16_t address, uint8_t& reg);
-    void op_ld_imm16mem_sp();
     void op_ld_r8_r16mem(uint8_t& reg, uint16_t address);
+
+    void op_ld_r16_imm16(uint8_t& reg_high, uint8_t& reg_low);
+    void op_ld_r16mem_r8(uint16_t address, uint8_t& reg);
+    void op_ld_r16mem_imm8(uint16_t address);
+    
+
+    void op_ld_imm16mem_sp();
     void op_ld_hl_inc_a();
     void op_ld_a_hl_inc();
+
+    void op_ld_hl_dec_a();
+    void op_ld_a_hl_dec();
 
     // BLOQUE INC y DEC
     void op_inc_r8(uint8_t& reg);
     void op_dec_r8(uint8_t& reg);
-    
+
+    void op_inc_r16(uint8_t& reg_high, uint8_t& reg_low);
+
+    // BLOQUE LÓGICO
+
+    void op_or_r8(uint8_t reg);
+    void op_and_r8(uint8_t reg);
 };

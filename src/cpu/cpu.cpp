@@ -75,24 +75,29 @@ uint16_t CPU::fetch_16(){
 
 void CPU::op_nop(){}
 
-// BLOQUE LD
+//----------------------------------------BLOQUE LD----------------------------------------
 void CPU::op_ld_r8_imm8(uint8_t& reg){reg = fetch();} // LD X, n8.
-void CPU::op_ld_r16_imm16(uint8_t& reg_high, uint8_t& reg_low){ reg_low = fetch(); reg_high = fetch();} // LD XX, n16.
-void CPU::op_ld_r8_r8(uint8_t& reg1, uint8_t& reg2){reg1 = reg2;} // LD X, X.
-void CPU::op_ld_r16mem_r8(uint16_t address, uint8_t& reg){ write_byte(address, reg);} // LD [XX], X.
 void CPU::op_ld_r8_r16mem(uint8_t& reg, uint16_t address){ reg = read_byte(address);} // LD X, [XX].
+void CPU::op_ld_r8_r8(uint8_t& reg1, uint8_t& reg2){reg1 = reg2;} // LD X, X.
+
+void CPU::op_ld_r16_imm16(uint8_t& reg_high, uint8_t& reg_low){ reg_low = fetch(); reg_high = fetch();} // LD XX, n16.
+void CPU::op_ld_r16mem_r8(uint16_t address, uint8_t& reg){ write_byte(address, reg);} // LD [XX], X.
+void CPU::op_ld_r16mem_imm8(uint16_t address){ uint8_t value = fetch(); write_byte(address, value);} // LD [XX], n8
 
 void CPU::op_ld_imm16mem_sp(){ // LD [n16], SP
     uint16_t addr = fetch_16();
 
     write_byte(addr, sp & 0xFF);
     write_byte(addr + 1, sp >> 8);
-} 
+}
 
-void CPU::op_ld_hl_inc_a(){ write_byte(get_hl(),a); set_hl(get_hl() + 1);}
-void CPU::op_ld_a_hl_inc(){a = read_byte(get_hl()); set_hl(get_hl() + 1);}
+void CPU::op_ld_hl_inc_a(){ write_byte(get_hl(),a); set_hl(get_hl() + 1);} // LD [HL+], a
+void CPU::op_ld_a_hl_inc(){a = read_byte(get_hl()); set_hl(get_hl() + 1);} // LD a, [HL+]
 
-// BLOQUE INC y DEC
+void CPU::op_ld_hl_dec_a(){ write_byte(get_hl(),a); set_hl(get_hl() - 1);} // LD [HL-], a
+void CPU::op_ld_a_hl_dec(){a = read_byte(get_hl()); set_hl(get_hl() - 1);} // LD a, [HL-]
+
+// ----------------------------------------BLOQUE INC y DEC----------------------------------------
 void CPU::op_inc_r8(uint8_t& reg){
     bool half_carry = (reg & 0x0F) == 0x0F;
 
@@ -108,4 +113,31 @@ void CPU::op_dec_r8(uint8_t& reg){
     set_flag_z(reg == 0);
     set_flag_n(true);
     set_flag_h(half_carry);
+}
+
+void CPU::op_inc_r16(uint8_t& reg_high, uint8_t& reg_low){ // INC XX. NOTA: PARA SP USAR SP++ EN EL SWITCH, NO ESTE MÉTODO.
+    uint16_t val = (reg_high << 8) | reg_low;
+    val++;
+    reg_high = val >> 8;
+    reg_low = val & 0xFF;
+}
+
+// ----------------------------------------BLOQUE LÓGICO----------------------------------------
+
+void CPU::op_or_r8(uint8_t reg){
+    a |= reg;
+
+    set_flag_z(a == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(false);
+}
+
+void CPU::op_and_r8(uint8_t reg){
+    a &= reg;
+
+    set_flag_z(a == 0);
+    set_flag_n(false);
+    set_flag_h(true);
+    set_flag_c(false);
 }
