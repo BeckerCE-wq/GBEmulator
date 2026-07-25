@@ -32,7 +32,6 @@ private:
     bool ime;     // Interrupt Master Enable
 
     // 4. Etapas del ciclo
-
     uint8_t fetch();
     void decode_and_execute(uint8_t opcode);
 
@@ -42,5 +41,21 @@ private:
     void set_flag_h(bool val); // Half Carry flag
     void set_flag_c(bool val); // Carry flag
 
-    
+    bool get_flag_z() const;
+    bool get_flag_n() const;
+    bool get_flag_h() const;
+    bool get_flag_c() const;
+
+    // Helpers para operaciones de doble registro.
+
+    inline uint16_t get_bc() const {return (b << 8) | c; }
+    inline uint16_t get_de() const {return (d << 8) | e; }
+    inline uint16_t get_hl() const {return (h << 8) | l; }
+    inline uint16_t get_af() const { return (a << 8) | f; }
+
+    inline void set_bc(uint16_t val){b = val >> 8; c = val & 0xFF; }
+    inline void set_de(uint16_t val){d = val >> 8; e = val & 0xFF; }
+    inline void set_hl(uint16_t val){h = val >> 8; l = val & 0xFF; }
+    inline void set_af(uint16_t val){a = val >> 8; f = val & 0xF0;} // Solo se usan los primeros 4 bits de f y el resto siempre deben ser ceros.
+
 };
