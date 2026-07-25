@@ -33,6 +33,7 @@ private:
 
     // 4. Etapas del ciclo
     uint8_t fetch();
+    uint16_t fetch_16();
     void decode_and_execute(uint8_t opcode);
 
     // 5. Banderas (El registro 'f' solo usa 4 banderas)
@@ -51,11 +52,28 @@ private:
     inline uint16_t get_bc() const {return (b << 8) | c; }
     inline uint16_t get_de() const {return (d << 8) | e; }
     inline uint16_t get_hl() const {return (h << 8) | l; }
-    inline uint16_t get_af() const { return (a << 8) | f; }
+    inline uint16_t get_af() const {return (a << 8) | f; }
 
     inline void set_bc(uint16_t val){b = val >> 8; c = val & 0xFF; }
     inline void set_de(uint16_t val){d = val >> 8; e = val & 0xFF; }
     inline void set_hl(uint16_t val){h = val >> 8; l = val & 0xFF; }
     inline void set_af(uint16_t val){a = val >> 8; f = val & 0xF0;} // Solo se usan los primeros 4 bits de f y el resto siempre deben ser ceros.
 
+    // Instruciones...
+
+    // BLOQUE LD
+    void op_nop();
+    void op_ld_r8_imm8(uint8_t& reg);
+    void op_ld_r16_imm16(uint8_t& reg_high, uint8_t& reg_low);
+    void op_ld_r8_r8(uint8_t& reg1, uint8_t& reg2);
+    void op_ld_r16mem_r8(uint16_t address, uint8_t& reg);
+    void op_ld_imm16mem_sp();
+    void op_ld_r8_r16mem(uint8_t& reg, uint16_t address);
+    void op_ld_hl_inc_a();
+    void op_ld_a_hl_inc();
+
+    // BLOQUE INC y DEC
+    void op_inc_r8(uint8_t& reg);
+    void op_dec_r8(uint8_t& reg);
+    
 };
