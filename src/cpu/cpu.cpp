@@ -98,7 +98,7 @@ void CPU::op_ld_hl_dec_a(){ write_byte(get_hl(),a); set_hl(get_hl() - 1);} // LD
 void CPU::op_ld_a_hl_dec(){a = read_byte(get_hl()); set_hl(get_hl() - 1);} // LD a, [HL-]
 
 // ----------------------------------------BLOQUE INC y DEC----------------------------------------
-void CPU::op_inc_r8(uint8_t& reg){
+void CPU::op_inc_r8(uint8_t& reg){ // INC r8
     bool half_carry = (reg & 0x0F) == 0x0F;
 
     reg++;
@@ -106,7 +106,8 @@ void CPU::op_inc_r8(uint8_t& reg){
     set_flag_n(false);
     set_flag_h(half_carry);
 }
-void CPU::op_dec_r8(uint8_t& reg){
+
+void CPU::op_dec_r8(uint8_t& reg){ // DEC r8
     bool half_carry = (reg & 0x0F) == 0x00;
     reg--;
 
@@ -122,6 +123,52 @@ void CPU::op_inc_r16(uint8_t& reg_high, uint8_t& reg_low){ // INC XX. NOTA: PARA
     reg_low = val & 0xFF;
 }
 
+void CPU::op_dec_r16(uint8_t& reg_high, uint8_t& reg_low){ // DEC XX. TAMBIEN USAR SP--
+    uint16_t val = (reg_high << 8) | reg_low;
+    val--;
+    reg_high = val >> 8;
+    reg_low = val & 0xFF;
+}
+
+void CPU::op_inc_r16mem(uint16_t address){
+    uint8_t val = read_byte(address);
+    bool half_carry = (val & 0x0F) == 0x0F;
+
+    val++;
+    write_byte(address, val);
+
+    set_flag_z(val == 0);
+    set_flag_n(false);
+    set_flag_h(half_carry);
+}
+
+void CPU::op_dec_r16mem(uint16_t address){
+    uint8_t val = read_byte(address);
+    bool half_carry = (val & 0x0F) == 0x00;
+
+    val--;
+    write_byte(address, val);
+
+    set_flag_z(val == 0);
+    set_flag_n(true);
+    set_flag_h(half_carry);
+}
+
+void CPU::op_add_r16(uint16_t reg) {
+    uint16_t hl_val = get_hl();
+
+    int result = hl_val + reg;
+
+    bool half_carry = ((hl_val & 0x0FFF) + (reg & 0x0FFF)) > 0x0FFF;
+
+    bool carry = result > 0xFFFF;
+
+    set_hl(static_cast<uint16_t>(result));
+
+    set_flag_n(false);
+    set_flag_h(half_carry);
+    set_flag_c(carry);
+}
 // ----------------------------------------BLOQUE LÓGICO----------------------------------------
 
 void CPU::op_or_r8(uint8_t reg){
@@ -140,4 +187,88 @@ void CPU::op_and_r8(uint8_t reg){
     set_flag_n(false);
     set_flag_h(true);
     set_flag_c(false);
+}
+
+void CPU::op_xor_r8(uint8_t reg){
+    a ^= reg;
+
+    set_flag_z(a == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(false);
+}
+
+// ----------------------------------------BLOQUE ARITMETICO----------------------------------------
+
+void CPU::op_add_r8(uint8_t reg){ // ADD A, X
+    int result = a + reg;
+    
+    bool half_carry = ((a & 0x0F) + (reg & 0x0F)) > 0x0F;
+    bool carry = result > 0xFF;
+    
+    a = static_cast<uint8_t>(result);
+
+    set_flag_z(a == 0);
+    set_flag_n(false);
+    set_flag_h(half_carry);
+    set_flag_c(carry);
+}
+
+void CPU::op_sub_r8(uint8_t reg){ // SUB A, X
+    int result = a - reg;
+
+    bool carry = reg > a;
+    bool half_carry = (reg & 0x0F) > (a & 0x0F);
+
+    a = static_cast<uint8_t>(result);
+
+    set_flag_z(a == 0);
+    set_flag_n(true);
+    set_flag_h(half_carry);
+    set_flag_c(carry);
+}
+
+void CPU::op_addc_r8(uint8_t reg){ // ADC A, X
+    uint8_t carry_in = get_flag_c() ? 1 : 0;
+
+    int result = a + reg + carry_in;
+    
+    bool half_carry = ((a & 0x0F) + (reg & 0x0F) + carry_in) > 0x0F;
+    bool carry = result > 0xFF;
+    
+    a = static_cast<uint8_t>(result);
+
+    set_flag_z(a == 0);
+    set_flag_n(false);
+    set_flag_h(half_carry);
+    set_flag_c(carry);
+}
+
+void CPU::op_sbc_r8(uint8_t reg){
+    uint8_t carry_in = get_flag_c() ? 1 : 0;
+
+    int result = a - reg - carry_in;
+
+    bool half_carry = ((a & 0x0F) - (reg & 0x0F) - carry_in) < 0;
+
+    bool carry = result < 0;
+
+    a = static_cast<uint8_t>(result);
+
+    set_flag_z(a == 0);
+    set_flag_n(true);
+    set_flag_h(half_carry);
+    set_flag_c(carry);
+}
+
+void CPU::op_cp_r8(uint8_t reg){
+    uint8_t result = a - reg;
+
+    bool carry = reg > a;
+    bool half_carry = (reg & 0x0F) > (a & 0x0F);
+
+    set_flag_z(result == 0);
+    set_flag_n(true);
+    set_flag_h(half_carry);
+    set_flag_c(carry);
 }

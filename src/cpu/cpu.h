@@ -86,9 +86,22 @@ private:
     void op_dec_r8(uint8_t& reg);
 
     void op_inc_r16(uint8_t& reg_high, uint8_t& reg_low);
-
+    void op_dec_r16(uint8_t& reg_high, uint8_t& reg_low);
+    void op_inc_r16mem(uint16_t address);
+    void op_dec_r16mem(uint16_t address);
     // BLOQUE LÓGICO
 
     void op_or_r8(uint8_t reg);
     void op_and_r8(uint8_t reg);
+    void op_xor_r8(uint8_t reg);
+
+    // BLOQUE ARITMETICO
+
+    void op_add_r8(uint8_t reg);
+    void op_sub_r8(uint8_t reg);
+    void op_addc_r8(uint8_t reg);
+    void op_sbc_r8(uint8_t reg);
+    void op_cp_r8(uint8_t reg);
+
+    void op_add_r16(uint16_t reg);
 };
