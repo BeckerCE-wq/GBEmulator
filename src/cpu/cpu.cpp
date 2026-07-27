@@ -97,6 +97,11 @@ void CPU::op_ld_a_hl_inc(){a = read_byte(get_hl()); set_hl(get_hl() + 1);} // LD
 void CPU::op_ld_hl_dec_a(){ write_byte(get_hl(),a); set_hl(get_hl() - 1);} // LD [HL-], a
 void CPU::op_ld_a_hl_dec(){a = read_byte(get_hl()); set_hl(get_hl() - 1);} // LD a, [HL-]
 
+void CPU::op_ldh_n16_amem(uint8_t value){write_byte(value + 0xFF00, a);} // LDH [XX], A
+
+void CPU::op_ldh_amem_n16(uint8_t value){ a = read_byte(value + 0xFF00);} // LDH A, [XX]
+
+
 // ----------------------------------------BLOQUE INC y DEC----------------------------------------
 void CPU::op_inc_r8(uint8_t& reg){ // INC r8
     bool half_carry = (reg & 0x0F) == 0x0F;
@@ -154,21 +159,6 @@ void CPU::op_dec_r16mem(uint16_t address){
     set_flag_h(half_carry);
 }
 
-void CPU::op_add_r16(uint16_t reg) {
-    uint16_t hl_val = get_hl();
-
-    int result = hl_val + reg;
-
-    bool half_carry = ((hl_val & 0x0FFF) + (reg & 0x0FFF)) > 0x0FFF;
-
-    bool carry = result > 0xFFFF;
-
-    set_hl(static_cast<uint16_t>(result));
-
-    set_flag_n(false);
-    set_flag_h(half_carry);
-    set_flag_c(carry);
-}
 // ----------------------------------------BLOQUE LÓGICO----------------------------------------
 
 void CPU::op_or_r8(uint8_t reg){
@@ -249,7 +239,7 @@ void CPU::op_sbc_r8(uint8_t reg){
 
     int result = a - reg - carry_in;
 
-    bool half_carry = ((a & 0x0F) - (reg & 0x0F) - carry_in) < 0;
+    bool half_carry = (static_cast<int>(a & 0x0F) - static_cast<int>(reg & 0x0F) - carry_in) < 0;
 
     bool carry = result < 0;
 
@@ -272,3 +262,58 @@ void CPU::op_cp_r8(uint8_t reg){
     set_flag_h(half_carry);
     set_flag_c(carry);
 }
+
+void CPU::op_add_r16(uint16_t reg) {
+    uint16_t hl_val = get_hl();
+
+    int result = hl_val + reg;
+
+    bool half_carry = ((hl_val & 0x0FFF) + (reg & 0x0FFF)) > 0x0FFF;
+
+    bool carry = result > 0xFFFF;
+
+    set_hl(static_cast<uint16_t>(result));
+
+    set_flag_n(false);
+    set_flag_h(half_carry);
+    set_flag_c(carry);
+}
+
+void CPU::op_add_sp_e8() {
+    int8_t offset = static_cast<int8_t>(fetch());
+
+    bool half_carry = ((sp & 0x0F) + (offset & 0x0F)) > 0x0F;
+
+    bool carry = ((sp & 0xFF) + (offset & 0xFF)) > 0xFF;
+
+    sp += offset;
+
+    set_flag_z(false);
+    set_flag_n(false);
+    set_flag_h(half_carry);
+    set_flag_c(carry);
+}
+// ----------------------------------------BLOQUE POP/PUSH----------------------------------------
+
+void CPU::op_pop_r16(uint8_t& reg_high, uint8_t& reg_low){
+    op_ld_r8_r16mem(reg_low, sp);
+    sp++;
+    op_ld_r8_r16mem(reg_high, sp);
+    sp++;
+
+    if (&reg_low == &f)
+    {
+        f &= 0xF0;
+    }
+}
+
+void CPU::op_push_r16(uint8_t& reg_high, uint8_t& reg_low) {
+    uint8_t low_val = (&reg_low == &f) ? (reg_low & 0xF0) : reg_low;
+
+    sp--;
+    op_ld_r16mem_r8(sp, reg_high);
+
+    sp--;
+    op_ld_r16mem_r8(sp, low_val);
+}
+

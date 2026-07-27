@@ -80,6 +80,8 @@ private:
 
     void op_ld_hl_dec_a();
     void op_ld_a_hl_dec();
+    void op_ldh_n16_amem(uint8_t value);
+    void op_ldh_amem_n16(uint8_t value);
 
     // BLOQUE INC y DEC
     void op_inc_r8(uint8_t& reg);
@@ -104,4 +106,10 @@ private:
     void op_cp_r8(uint8_t reg);
 
     void op_add_r16(uint16_t reg);
+
+    void op_add_sp_e8();
+    // BLOQUE POP/PUSH
+
+    void op_pop_r16(uint8_t& reg_high, uint8_t& reg_low);
+    void op_push_r16(uint8_t& reg_high, uint8_t& reg_low);
 };
