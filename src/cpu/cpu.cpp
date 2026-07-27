@@ -19,6 +19,8 @@ CPU::CPU(Bus* bus){
     pc = 0x0100; // La ROM del juego empieza en la dirección 0x0100 (salteando el logo de Nintendo)
     
     ime = false;
+    halted = false;
+    stopped = false;
 }
 
 uint8_t CPU::read_byte(uint16_t address) {
@@ -101,7 +103,22 @@ void CPU::op_ldh_n16_amem(uint8_t value){write_byte(value + 0xFF00, a);} // LDH 
 
 void CPU::op_ldh_amem_n16(uint8_t value){ a = read_byte(value + 0xFF00);} // LDH A, [XX]
 
+void CPU::op_ld_hl_sp_e8(){
+    uint8_t value = fetch();
+    int8_t offset = static_cast<int8_t>(value);
 
+    bool carry = (sp & 0xFF) + (value & 0xFF) > 0xFF;
+    bool half_carry = (sp & 0x0F) + (value & 0x0F) > 0x0F;
+
+    set_hl(sp + offset);
+
+    set_flag_z(false);
+    set_flag_n(false);
+    set_flag_h(half_carry);
+    set_flag_c(carry);
+}
+
+void CPU::op_ld_sp_hl(){ sp = get_hl();}
 // ----------------------------------------BLOQUE INC y DEC----------------------------------------
 void CPU::op_inc_r8(uint8_t& reg){ // INC r8
     bool half_carry = (reg & 0x0F) == 0x0F;
@@ -280,11 +297,11 @@ void CPU::op_add_r16(uint16_t reg) {
 }
 
 void CPU::op_add_sp_e8() {
-    int8_t offset = static_cast<int8_t>(fetch());
+    uint8_t value = fetch();
+    int8_t offset = static_cast<int8_t>(value);
 
-    bool half_carry = ((sp & 0x0F) + (offset & 0x0F)) > 0x0F;
-
-    bool carry = ((sp & 0xFF) + (offset & 0xFF)) > 0xFF;
+    bool half_carry = ((sp & 0x0F) + (value & 0x0F)) > 0x0F;
+    bool carry = ((sp & 0xFF) + (value & 0xFF)) > 0xFF;
 
     sp += offset;
 
@@ -317,3 +334,102 @@ void CPU::op_push_r16(uint8_t& reg_high, uint8_t& reg_low) {
     op_ld_r16mem_r8(sp, low_val);
 }
 
+// ----------------------------------------YA NO SÉ QUÉ ES ESTO----------------------------------------
+void CPU::op_halt(){ halted = true;}
+
+void CPU::op_stop() {fetch(); stopped = true;}
+
+// ----------------------------------------     ROTACIONES      ----------------------------------------
+void CPU::op_rlca() {
+    bool bit7 = (a & 0x80) != 0;
+    
+    a = (a << 1) | (bit7 ? 1 : 0);
+
+    set_flag_z(false);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit7);
+}
+
+void CPU::op_rla() {
+    bool bit7 = (a & 0x80) != 0;
+    bool old_carry = get_flag_c();
+
+    a = (a << 1) | (old_carry ? 1 : 0);
+
+    set_flag_z(false);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit7);
+}
+
+void CPU::op_rrca() {
+    bool bit0 = (a & 0x01) != 0;
+    
+    a = (a >> 1) | (bit0 ? 0x80 : 0);
+
+    set_flag_z(false);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit0);
+}
+
+void CPU::op_rra(){
+    bool bit0 = (a & 0x01) != 0;
+    bool old_carry = get_flag_c();
+
+    a = (a >> 1) | (old_carry ? 0x80 : 0);
+
+    set_flag_z(false);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit0);
+}
+
+// ----------------------------------------     SALTOS         ----------------------------------------
+void CPU::op_jr_condition_e8(bool condition){
+    int8_t offset = static_cast<int8_t>(fetch());
+
+    if (condition) pc += offset;
+}
+
+void CPU::op_jp_condition_n16(bool condition){
+    uint16_t addr = fetch_16();
+
+    if (condition) pc = addr;
+}
+
+void CPU::op_jp_hl(){ pc = get_hl();}
+
+void CPU::op_call_condition_n16(bool condition){
+    uint16_t address = fetch_16();
+
+    if (condition)
+    {
+        sp--;
+        write_byte(sp, static_cast<uint8_t>(pc >> 8));
+
+        sp--;
+        write_byte(sp, static_cast<uint8_t>(pc & 0xFF));
+
+        pc = address;
+    }
+}
+
+void CPU::op_ret_condition(bool condition){
+    if (condition)
+    {
+        uint8_t low = read_byte(sp);
+        sp++;
+
+        uint8_t high = read_byte(sp);
+        sp++;
+
+        pc = (static_cast<uint16_t>(high) << 8) | low;
+    }
+}
+
+void CPU::op_reti(){
+    op_ret_condition(true);
+    ime = true;
+}

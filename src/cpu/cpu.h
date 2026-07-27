@@ -30,6 +30,8 @@ private:
 
     // 3. Modos / Interrupciones
     bool ime;     // Interrupt Master Enable
+    bool halted;
+    bool stopped;
 
     // 4. Etapas del ciclo
     uint8_t fetch();
@@ -83,6 +85,8 @@ private:
     void op_ldh_n16_amem(uint8_t value);
     void op_ldh_amem_n16(uint8_t value);
 
+    void op_ld_hl_sp_e8();
+    void op_ld_sp_hl();
     // BLOQUE INC y DEC
     void op_inc_r8(uint8_t& reg);
     void op_dec_r8(uint8_t& reg);
@@ -112,4 +116,23 @@ private:
 
     void op_pop_r16(uint8_t& reg_high, uint8_t& reg_low);
     void op_push_r16(uint8_t& reg_high, uint8_t& reg_low);
+
+    // NO SÉ QUÉ ES ESTO
+    void op_halt();
+    void op_stop();
+
+    // ROTACIONES
+    void op_rlca();
+    void op_rla();
+    void op_rrca();
+    void op_rra();
+
+    // SALTOS
+
+    void op_jr_condition_e8(bool condition);
+    void op_jp_condition_n16(bool condition);
+    void op_jp_hl();
+    void op_call_condition_n16(bool condition);
+    void op_ret_condition(bool condition);
+    void op_reti();
 };
