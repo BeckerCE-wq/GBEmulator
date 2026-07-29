@@ -1,8 +1,6 @@
 #pragma once
-
 #include "bus/bus.h"
-
-#include <stdint.h>
+#include <cstdint>
 
 class Bus;
 
@@ -30,9 +28,10 @@ private:
 
     // 3. Modos / Interrupciones
     bool ime;     // Interrupt Master Enable
+    uint8_t ei_delay;
     bool halted;
     bool stopped;
-
+    
     // 4. Etapas del ciclo
     uint8_t fetch();
     uint16_t fetch_16();
@@ -59,7 +58,7 @@ private:
     inline void set_bc(uint16_t val){b = val >> 8; c = val & 0xFF; }
     inline void set_de(uint16_t val){d = val >> 8; e = val & 0xFF; }
     inline void set_hl(uint16_t val){h = val >> 8; l = val & 0xFF; }
-    inline void set_af(uint16_t val){a = val >> 8; f = val & 0xF0;} // Solo se usan los primeros 4 bits de f y el resto siempre deben ser ceros.
+    inline void set_af(uint16_t val){a = val >> 8; f = val & 0xF0; } // Solo se usan los primeros 4 bits de f y el resto siempre deben ser ceros.
 
     // Instruciones...
 
@@ -112,14 +111,20 @@ private:
     void op_add_r16(uint16_t reg);
 
     void op_add_sp_e8();
+    void op_daa();
+    void op_scf();
+    void op_ccf();
+    void op_cpl();
     // BLOQUE POP/PUSH
 
     void op_pop_r16(uint8_t& reg_high, uint8_t& reg_low);
     void op_push_r16(uint8_t& reg_high, uint8_t& reg_low);
 
-    // NO SÉ QUÉ ES ESTO
+    // INTERRUPCIONES (CREO)
     void op_halt();
     void op_stop();
+    void op_di();
+    void op_ei();
 
     // ROTACIONES
     void op_rlca();
@@ -135,4 +140,40 @@ private:
     void op_call_condition_n16(bool condition);
     void op_ret_condition(bool condition);
     void op_reti();
+    void op_rst(uint16_t vector);
+
+    // PREFIX
+
+    void op_rlc_r8(uint8_t& reg);
+    void op_rlc_hl();
+
+    void op_rl_r8(uint8_t& reg);
+    void op_rl_hl();
+    
+    void op_rrc_r8(uint8_t& reg);
+    void op_rrc_hl();
+
+    void op_rr_r8(uint8_t& reg);
+    void op_rr_hl();
+
+    void op_bit_b_r8(uint8_t bit, uint8_t reg);
+    void op_bit_b_hl(uint8_t bit);
+
+    void op_set_r8(uint8_t bit, uint8_t& reg);
+    void op_res_r8(uint8_t bit, uint8_t& reg);
+
+    void op_set_hl(uint8_t bit);
+    void op_res_hl(uint8_t bit);
+
+    void op_swap_r8(uint8_t& reg);
+    void op_swap_hl();
+
+    void op_sla_r8(uint8_t& reg);
+    void op_sla_hl();
+
+    void op_sra_r8(uint8_t& reg);
+    void op_sra_hl();
+
+    void op_srl_r8(uint8_t& reg);
+    void op_srl_hl();
 };

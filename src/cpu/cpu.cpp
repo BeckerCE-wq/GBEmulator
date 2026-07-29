@@ -19,11 +19,12 @@ CPU::CPU(Bus* bus){
     pc = 0x0100; // La ROM del juego empieza en la dirección 0x0100 (salteando el logo de Nintendo)
     
     ime = false;
+    ei_delay = 0;
     halted = false;
     stopped = false;
 }
 
-uint8_t CPU::read_byte(uint16_t address) {
+uint8_t CPU::read_byte(uint16_t address){
     return bus->read_byte(address); // La CPU le pide el byte al Bus
 }
 
@@ -53,10 +54,10 @@ void CPU::set_flag_c(bool val){
     else f &= ~(1 << 4);
 }
 
-bool CPU::get_flag_z() const {return (f & (1 << 7)) != 0;}
-bool CPU::get_flag_n() const {return (f & (1 << 6)) != 0;}
-bool CPU::get_flag_h() const {return (f & (1 << 5)) != 0;}
-bool CPU::get_flag_c() const {return (f & (1 << 4)) != 0;}
+bool CPU::get_flag_z() const {  return (f & (1 << 7)) != 0;}
+bool CPU::get_flag_n() const {  return (f & (1 << 6)) != 0;}
+bool CPU::get_flag_h() const {  return (f & (1 << 5)) != 0;}
+bool CPU::get_flag_c() const {  return (f & (1 << 4)) != 0;}
 
 // Fetch
 
@@ -94,10 +95,10 @@ void CPU::op_ld_imm16mem_sp(){ // LD [n16], SP
 }
 
 void CPU::op_ld_hl_inc_a(){ write_byte(get_hl(),a); set_hl(get_hl() + 1);} // LD [HL+], a
-void CPU::op_ld_a_hl_inc(){a = read_byte(get_hl()); set_hl(get_hl() + 1);} // LD a, [HL+]
+void CPU::op_ld_a_hl_inc(){ a = read_byte(get_hl()); set_hl(get_hl() + 1);} // LD a, [HL+]
 
 void CPU::op_ld_hl_dec_a(){ write_byte(get_hl(),a); set_hl(get_hl() - 1);} // LD [HL-], a
-void CPU::op_ld_a_hl_dec(){a = read_byte(get_hl()); set_hl(get_hl() - 1);} // LD a, [HL-]
+void CPU::op_ld_a_hl_dec(){ a = read_byte(get_hl()); set_hl(get_hl() - 1);} // LD a, [HL-]
 
 void CPU::op_ldh_n16_amem(uint8_t value){write_byte(value + 0xFF00, a);} // LDH [XX], A
 
@@ -280,7 +281,7 @@ void CPU::op_cp_r8(uint8_t reg){
     set_flag_c(carry);
 }
 
-void CPU::op_add_r16(uint16_t reg) {
+void CPU::op_add_r16(uint16_t reg){
     uint16_t hl_val = get_hl();
 
     int result = hl_val + reg;
@@ -310,6 +311,53 @@ void CPU::op_add_sp_e8() {
     set_flag_h(half_carry);
     set_flag_c(carry);
 }
+
+void CPU::op_daa() {
+    uint8_t adjust = 0;
+    bool carry = get_flag_c();
+
+    if (!get_flag_n()) {    // VIENE DE UNA SUMA (N == 0)
+
+        if (get_flag_h() || (a & 0x0F) > 0x09) { adjust |= 0x06;}
+
+        if (carry || a > 0x99) {
+            adjust |= 0x60;
+            carry = true;
+        }
+        a += adjust;
+
+    } else {    // VIENE DE UNA RESTA (N == 1)
+        if (get_flag_h()) { adjust |= 0x06; }
+
+        if (carry) { adjust |= 0x60; }
+        
+        a -= adjust;
+    }
+
+
+    set_flag_z(a == 0);
+    set_flag_h(false);
+    set_flag_c(carry);
+}
+
+void CPU::op_scf(){
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(true);
+}
+
+void CPU::op_ccf(){
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(!get_flag_c());
+}
+
+void CPU::op_cpl(){
+    a = ~a;
+    set_flag_n(true);
+    set_flag_h(true);
+}
+
 // ----------------------------------------BLOQUE POP/PUSH----------------------------------------
 
 void CPU::op_pop_r16(uint8_t& reg_high, uint8_t& reg_low){
@@ -324,7 +372,7 @@ void CPU::op_pop_r16(uint8_t& reg_high, uint8_t& reg_low){
     }
 }
 
-void CPU::op_push_r16(uint8_t& reg_high, uint8_t& reg_low) {
+void CPU::op_push_r16(uint8_t& reg_high, uint8_t& reg_low){
     uint8_t low_val = (&reg_low == &f) ? (reg_low & 0xF0) : reg_low;
 
     sp--;
@@ -334,13 +382,17 @@ void CPU::op_push_r16(uint8_t& reg_high, uint8_t& reg_low) {
     op_ld_r16mem_r8(sp, low_val);
 }
 
-// ----------------------------------------YA NO SÉ QUÉ ES ESTO----------------------------------------
+// ----------------------------------------INTERRUPCIONES---------------------------------------
 void CPU::op_halt(){ halted = true;}
 
-void CPU::op_stop() {fetch(); stopped = true;}
+void CPU::op_stop() { fetch(); stopped = true;}
+
+void CPU::op_di(){ ime = false;}
+
+void CPU::op_ei(){ ei_delay = 2;}
 
 // ----------------------------------------     ROTACIONES      ----------------------------------------
-void CPU::op_rlca() {
+void CPU::op_rlca(){
     bool bit7 = (a & 0x80) != 0;
     
     a = (a << 1) | (bit7 ? 1 : 0);
@@ -351,7 +403,7 @@ void CPU::op_rlca() {
     set_flag_c(bit7);
 }
 
-void CPU::op_rla() {
+void CPU::op_rla(){
     bool bit7 = (a & 0x80) != 0;
     bool old_carry = get_flag_c();
 
@@ -363,7 +415,7 @@ void CPU::op_rla() {
     set_flag_c(bit7);
 }
 
-void CPU::op_rrca() {
+void CPU::op_rrca(){
     bool bit0 = (a & 0x01) != 0;
     
     a = (a >> 1) | (bit0 ? 0x80 : 0);
@@ -386,7 +438,7 @@ void CPU::op_rra(){
     set_flag_c(bit0);
 }
 
-// ----------------------------------------     SALTOS         ----------------------------------------
+// ----------------------------------------     SALTOS      ----------------------------------------
 void CPU::op_jr_condition_e8(bool condition){
     int8_t offset = static_cast<int8_t>(fetch());
 
@@ -432,4 +484,187 @@ void CPU::op_ret_condition(bool condition){
 void CPU::op_reti(){
     op_ret_condition(true);
     ime = true;
+}
+
+void CPU::op_rst(uint16_t vector){
+    
+    sp--;
+    write_byte(sp, static_cast<uint8_t>(pc >> 8));
+
+    sp--;
+    write_byte(sp, static_cast<uint8_t>(pc & 0xFF));
+
+    pc = vector;
+}
+
+// -------------------------------------- PREFIX --------------------------------------------------
+void CPU::op_rlc_r8(uint8_t& reg){
+    bool bit7 = (reg & 0x80) != 0;
+    
+    reg = (reg << 1) | (bit7 ? 1 : 0);
+
+    set_flag_z(reg == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit7);
+}
+
+void CPU::op_rlc_hl(){
+    uint8_t val = read_byte(get_hl());
+    op_rlc_r8(val);
+    write_byte(get_hl(), val);
+}
+
+void CPU::op_rl_r8(uint8_t& reg){
+    bool bit7 = (reg & 0x80) != 0;
+    bool old_carry = get_flag_c();
+
+    reg = (reg << 1) | (old_carry ? 1 : 0);
+
+    set_flag_z(reg == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit7);
+}
+
+void CPU::op_rl_hl(){
+    uint8_t val = read_byte(get_hl());
+    op_rl_r8(val);
+    write_byte(get_hl(), val);
+}
+
+void CPU::op_rrc_r8(uint8_t& reg){
+    bool bit0 = (reg & 0x01) != 0;
+    
+    reg = (reg >> 1) | (bit0 ? 0x80 : 0);
+
+    set_flag_z(reg == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit0);
+}
+
+void CPU::op_rrc_hl(){
+    uint8_t val = read_byte(get_hl());
+    op_rrc_r8(val);
+    write_byte(get_hl(), val);
+}
+
+void CPU::op_rr_r8(uint8_t& reg){
+    bool bit0 = (reg & 0x01) != 0;
+    bool old_carry = get_flag_c();
+
+    reg = (reg >> 1) | (old_carry ? 0x80 : 0);
+
+    set_flag_z(reg == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit0);
+}
+void CPU::op_rr_hl(){
+    uint8_t val = read_byte(get_hl());
+    op_rr_r8(val);
+    write_byte(get_hl(), val);
+}
+
+void CPU::op_bit_b_r8(uint8_t bit, uint8_t reg){
+    bool is_set = (reg & (1 << bit)) != 0;
+
+    set_flag_z(!is_set);
+    set_flag_n(false);
+    set_flag_h(true);
+}
+
+void CPU::op_bit_b_hl(uint8_t bit) {
+    uint8_t val = read_byte(get_hl());
+    op_bit_b_r8(bit, val);
+}
+
+void CPU::op_set_r8(uint8_t bit, uint8_t& reg){
+    reg |= (1 << bit); 
+}
+
+void CPU::op_res_r8(uint8_t bit, uint8_t& reg){
+    reg &= ~(1 << bit);
+}
+
+void CPU::op_set_hl(uint8_t bit){
+    uint8_t val = read_byte(get_hl());
+    op_set_r8(bit, val);
+    write_byte(get_hl(), val);
+}
+
+void CPU::op_res_hl(uint8_t bit){
+    uint8_t val = read_byte(get_hl());
+    op_res_r8(bit, val);
+    write_byte(get_hl(), val);
+}
+
+void CPU::op_swap_r8(uint8_t& reg){
+    uint8_t low = (reg & 0x0F) << 4;
+    uint8_t high = reg >> 4;
+
+    reg = low | high;
+
+    set_flag_z(reg == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(false);
+}
+
+void CPU::op_swap_hl(){
+    uint8_t val = read_byte(get_hl());
+    op_swap_r8(val);
+    write_byte(get_hl(), val);
+}
+
+void CPU::op_sla_r8(uint8_t& reg){
+    bool bit7 = (reg & 0x80) != 0;
+
+    reg = reg << 1;
+
+    set_flag_z(reg == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit7);
+}
+
+void CPU::op_sla_hl(){
+    uint8_t val = read_byte(get_hl());
+    op_sla_r8(val);
+    write_byte(get_hl(), val);
+}
+
+void CPU::op_sra_r8(uint8_t& reg){
+    bool bit0 = (reg & 0x01) != 0;
+    uint8_t bit7 = (reg & 0x80);
+
+    reg = bit7 | (reg >> 1);
+
+    set_flag_z(reg == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit0);
+}
+
+void CPU::op_sra_hl(){
+    uint8_t val = read_byte(get_hl());
+    op_sra_r8(val);
+    write_byte(get_hl(), val);
+}
+
+void CPU::op_srl_r8(uint8_t& reg){
+    bool bit0 = (reg & 0x01) != 0;
+    reg >>= 1;
+
+    set_flag_z(reg == 0);
+    set_flag_n(false);
+    set_flag_h(false);
+    set_flag_c(bit0);
+}
+
+void CPU::op_srl_hl(){
+    uint8_t val = read_byte(get_hl());
+    op_srl_r8(val);
+    write_byte(get_hl(), val);
 }
