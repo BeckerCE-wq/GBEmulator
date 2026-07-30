@@ -9,7 +9,7 @@
 class Bus {
 public:
     Bus();
-    
+
     void insert_cartridge(Cartridge* cart) { cartridge = cart; }
 
     uint8_t read_byte(uint16_t address);
@@ -18,7 +18,7 @@ public:
 private:
     Cartridge* cartridge = nullptr; // ROM y RAM Externa del Cartucho (0x0000 - 0x7FFF y 0xA000 - 0xBFFF)
     PPU ppu; // VRAM (0x8000 - 0x9FFF) y OAM Sprite Memory (0xFE00 - 0xFE9F)
-    Timer timer; 
+    Timer timer;
 
     std::array<uint8_t, 0x2000> wram{}; // Work RAM: 0xC000 - 0xDFFF (8 KiB)
     std::array<uint8_t, 0x007F> hram{}; // High RAM: 0xFF80 - 0xFFFE (127 bytes)

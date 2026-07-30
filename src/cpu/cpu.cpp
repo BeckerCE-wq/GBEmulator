@@ -14,10 +14,10 @@ CPU::CPU(Bus* bus){
     b = 0x00; c = 0x13;
     d = 0x00; e = 0xD8;
     h = 0x01; l = 0x4D;
-    
+
     sp = 0xFFFE; // La pila empieza al final de la RAM
     pc = 0x0100; // La ROM del juego empieza en la dirección 0x0100 (salteando el logo de Nintendo)
-    
+
     ime = false;
     ei_delay = 0;
     halted = false;
@@ -210,10 +210,10 @@ void CPU::op_xor_r8(uint8_t reg){
 
 void CPU::op_add_r8(uint8_t reg){ // ADD A, X
     int result = a + reg;
-    
+
     bool half_carry = ((a & 0x0F) + (reg & 0x0F)) > 0x0F;
     bool carry = result > 0xFF;
-    
+
     a = static_cast<uint8_t>(result);
 
     set_flag_z(a == 0);
@@ -240,10 +240,10 @@ void CPU::op_addc_r8(uint8_t reg){ // ADC A, X
     uint8_t carry_in = get_flag_c() ? 1 : 0;
 
     int result = a + reg + carry_in;
-    
+
     bool half_carry = ((a & 0x0F) + (reg & 0x0F) + carry_in) > 0x0F;
     bool carry = result > 0xFF;
-    
+
     a = static_cast<uint8_t>(result);
 
     set_flag_z(a == 0);
@@ -330,7 +330,7 @@ void CPU::op_daa() {
         if (get_flag_h()) { adjust |= 0x06; }
 
         if (carry) { adjust |= 0x60; }
-        
+
         a -= adjust;
     }
 
@@ -394,7 +394,7 @@ void CPU::op_ei(){ ei_delay = 2;}
 // ----------------------------------------     ROTACIONES      ----------------------------------------
 void CPU::op_rlca(){
     bool bit7 = (a & 0x80) != 0;
-    
+
     a = (a << 1) | (bit7 ? 1 : 0);
 
     set_flag_z(false);
@@ -417,7 +417,7 @@ void CPU::op_rla(){
 
 void CPU::op_rrca(){
     bool bit0 = (a & 0x01) != 0;
-    
+
     a = (a >> 1) | (bit0 ? 0x80 : 0);
 
     set_flag_z(false);
@@ -487,7 +487,7 @@ void CPU::op_reti(){
 }
 
 void CPU::op_rst(uint16_t vector){
-    
+
     sp--;
     write_byte(sp, static_cast<uint8_t>(pc >> 8));
 
@@ -500,7 +500,7 @@ void CPU::op_rst(uint16_t vector){
 // -------------------------------------- PREFIX --------------------------------------------------
 void CPU::op_rlc_r8(uint8_t& reg){
     bool bit7 = (reg & 0x80) != 0;
-    
+
     reg = (reg << 1) | (bit7 ? 1 : 0);
 
     set_flag_z(reg == 0);
@@ -535,7 +535,7 @@ void CPU::op_rl_hl(){
 
 void CPU::op_rrc_r8(uint8_t& reg){
     bool bit0 = (reg & 0x01) != 0;
-    
+
     reg = (reg >> 1) | (bit0 ? 0x80 : 0);
 
     set_flag_z(reg == 0);
@@ -581,7 +581,7 @@ void CPU::op_bit_b_hl(uint8_t bit) {
 }
 
 void CPU::op_set_r8(uint8_t bit, uint8_t& reg){
-    reg |= (1 << bit); 
+    reg |= (1 << bit);
 }
 
 void CPU::op_res_r8(uint8_t bit, uint8_t& reg){
