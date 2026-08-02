@@ -7,6 +7,8 @@ public:
 
     void tick(uint8_t m_cycles, bool& interrupt_flag);
 
+    bool get_timer_bit() const;
+
     uint8_t read_byte(uint16_t address) const;
     void write_byte(uint16_t address, uint8_t value);
 
