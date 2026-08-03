@@ -16,7 +16,7 @@ private:
     uint8_t read_byte(uint16_t address);
     void write_byte(uint16_t address, uint8_t value);
 
-    // 1. Registros de 8 bits 
+    // 1. Registros de 8 bits
     uint8_t a, f; // Acumulador y Banderas (Flags)
     uint8_t b, c;
     uint8_t d, e;
@@ -31,11 +31,11 @@ private:
     uint8_t ei_delay;
     bool halted;
     bool stopped;
-    
+
     // 4. Etapas del ciclo
     uint8_t fetch();
     uint16_t fetch_16();
-    void decode_and_execute(uint8_t opcode);
+    uint8_t decode_and_execute(uint8_t opcode);
 
     // 5. Banderas (El registro 'f' solo usa 4 banderas)
     void set_flag_z(bool val); // Zero flag
@@ -65,7 +65,7 @@ private:
     void op_nop();
 
     // BLOQUE LD
-    
+
     void op_ld_r8_imm8(uint8_t& reg);
     void op_ld_r8_r8(uint8_t& reg1, uint8_t& reg2);
     void op_ld_r8_r16mem(uint8_t& reg, uint16_t address);
@@ -73,7 +73,7 @@ private:
     void op_ld_r16_imm16(uint8_t& reg_high, uint8_t& reg_low);
     void op_ld_r16mem_r8(uint16_t address, uint8_t& reg);
     void op_ld_r16mem_imm8(uint16_t address);
-    
+
 
     void op_ld_imm16mem_sp();
     void op_ld_hl_inc_a();
@@ -149,7 +149,7 @@ private:
 
     void op_rl_r8(uint8_t& reg);
     void op_rl_hl();
-    
+
     void op_rrc_r8(uint8_t& reg);
     void op_rrc_hl();
 

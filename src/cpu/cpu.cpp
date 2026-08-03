@@ -366,10 +366,7 @@ void CPU::op_pop_r16(uint8_t& reg_high, uint8_t& reg_low){
     op_ld_r8_r16mem(reg_high, sp);
     sp++;
 
-    if (&reg_low == &f)
-    {
-        f &= 0xF0;
-    }
+    if (&reg_low == &f) f &= 0xF0;
 }
 
 void CPU::op_push_r16(uint8_t& reg_high, uint8_t& reg_low){
@@ -667,4 +664,29 @@ void CPU::op_srl_hl(){
     uint8_t val = read_byte(get_hl());
     op_srl_r8(val);
     write_byte(get_hl(), val);
+}
+
+// ---------------------------------- DECODE AND EXECUTE ----------------------------------------------
+
+uint8_t CPU::decode_and_execute(uint8_t opcode){
+    switch (opcode){
+        case 0x00: op_nop(); return 1;
+        case 0x01: op_ld_r16_imm16(b, c); return 3;
+        case 0x02: op_ld_r16mem_r8(get_bc(), a); return 2;
+        case 0x03: op_inc_r16(b, c); return 2;
+        case 0x04: op_inc_r8(b); return 1;
+        case 0x05: op_dec_r8(b); return 1;
+        case 0x06: op_ld_r8_imm8(b); return 2;
+        case 0x07: op_rlca(); return 1;
+        case 0x08: op_ld_imm16mem_sp(); return 5;
+        case 0x09: op_add_r16(get_bc()); return 2;
+        case 0x0A: op_ld_r8_r16mem(a, get_bc()); return 2;
+        case 0x0B: op_dec_r16(b, c); return 2;
+        case 0x0C: op_inc_r8(c); return 1;
+        case 0x0D: op_dec_r8(c); return 1;
+        case 0x0E: op_ld_r8_imm8(c); return 2;
+        case 0x0F: op_rrca(); return 1;
+
+        case 0x10: op_stop(); return 2;
+    }
 }
