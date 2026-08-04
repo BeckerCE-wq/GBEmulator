@@ -436,21 +436,23 @@ void CPU::op_rra(){
 }
 
 // ----------------------------------------     SALTOS      ----------------------------------------
-void CPU::op_jr_condition_e8(bool condition){
+bool CPU::op_jr_condition_e8(bool condition){
     int8_t offset = static_cast<int8_t>(fetch());
 
-    if (condition) pc += offset;
+    if (condition){ pc += offset; return true;}
+    return false;
 }
 
-void CPU::op_jp_condition_n16(bool condition){
+bool CPU::op_jp_condition_n16(bool condition){
     uint16_t addr = fetch_16();
 
-    if (condition) pc = addr;
+    if (condition){ pc = addr; return true;}
+    return false;
 }
 
 void CPU::op_jp_hl(){ pc = get_hl();}
 
-void CPU::op_call_condition_n16(bool condition){
+bool CPU::op_call_condition_n16(bool condition){
     uint16_t address = fetch_16();
 
     if (condition)
@@ -462,10 +464,12 @@ void CPU::op_call_condition_n16(bool condition){
         write_byte(sp, static_cast<uint8_t>(pc & 0xFF));
 
         pc = address;
+        return true;
     }
+    return false;
 }
 
-void CPU::op_ret_condition(bool condition){
+bool CPU::op_ret_condition(bool condition){
     if (condition)
     {
         uint8_t low = read_byte(sp);
@@ -475,7 +479,9 @@ void CPU::op_ret_condition(bool condition){
         sp++;
 
         pc = (static_cast<uint16_t>(high) << 8) | low;
+        return true;
     }
+    return false;
 }
 
 void CPU::op_reti(){
@@ -484,7 +490,6 @@ void CPU::op_reti(){
 }
 
 void CPU::op_rst(uint16_t vector){
-
     sp--;
     write_byte(sp, static_cast<uint8_t>(pc >> 8));
 
@@ -688,5 +693,55 @@ uint8_t CPU::decode_and_execute(uint8_t opcode){
         case 0x0F: op_rrca(); return 1;
 
         case 0x10: op_stop(); return 2;
+        case 0x11: op_ld_r16_imm16(d,e); return 3;
+        case 0x12: op_ld_r16mem_r8(get_de(), a); return 2;
+        case 0x13: op_inc_r16(d,e); return 2;
+        case 0x14: op_inc_r8(d); return 1;
+        case 0x15: op_dec_r8(d); return 1;
+        case 0x16: op_ld_r8_imm8(d); return 2;
+        case 0x17: op_rla(); return 1;
+        case 0x18: op_jr_condition_e8(true); return 3;
+        case 0x19: op_add_r16(get_de()); return 2;
+        case 0x1A: op_ld_r8_r16mem(a, get_de()); return 2;
+        case 0x1B: op_dec_r16(d,e); return 2;
+        case 0x1C: op_inc_r8(e); return 1;
+        case 0x1D: op_dec_r8(e); return 1;
+        case 0x1E: op_ld_r8_imm8(e); return 2;
+        case 0x1F: op_rra(); return 1;
+
+        case 0x20: return (op_jr_condition_e8(!get_flag_z())) ? 3 : 2;
+        case 0x21: op_ld_r16_imm16(h,l); return 3;
+        case 0x22: op_ld_hl_inc_a(); return 2;
+        case 0x23: op_inc_r16(h,l); return 2;
+        case 0x24: op_inc_r8(h); return 1;
+        case 0x25: op_dec_r8(h); return 1;
+        case 0x26: op_ld_r8_imm8(h); return 2;
+        case 0x27: op_daa(); return 1;
+        case 0x28: return (op_jr_condition_e8((get_flag_z()))) ? 3 : 2;
+        case 0x29: op_add_r16(get_hl()); return 2;
+        case 0x2A: op_ld_a_hl_inc(); return 2;
+        case 0x2B: op_dec_r16(h,l); return 2;
+        case 0x2C: op_inc_r8(l); return 1;
+        case 0x2D: op_dec_r8(l); return 1;
+        case 0x2E: op_ld_r8_imm8(l); return 2;
+        case 0x2F: op_cpl(); return 1;
+
+        case 0x30: return (op_jr_condition_e8(!get_flag_c())) ? 3 : 2;
+        case 0x31: sp = fetch_16(); return 3;
+        case 0x32: op_ld_hl_dec_a(); return 2;
+        case 0x33: sp++; return 2;
+        case 0x34: op_inc_r16mem(get_hl()); return 3;
+        case 0x35: op_dec_r16mem(get_hl()); return 3;
+        case 0x36: op_ld_r16mem_imm8(get_hl()); return 3;
+        case 0x37: op_scf(); return 1;
+        case 0x38: return(op_jr_condition_e8(get_flag_c())) ? 3 : 2;
+        case 0x39: op_add_r16(sp); return 2;
+        case 0x3A: op_ld_a_hl_dec(); return 2;
+        case 0x3B: sp--; return 2;
+        case 0x3C: op_inc_r8(a); return 1;
+        case 0x3D: op_dec_r8(a); return 1;
+        case 0x3E: op_ld_r8_imm8(a); return 2;
+        case 0x3F: op_ccf(); return 1;
+
     }
 }

@@ -134,11 +134,11 @@ private:
 
     // SALTOS
 
-    void op_jr_condition_e8(bool condition);
-    void op_jp_condition_n16(bool condition);
+    bool op_jr_condition_e8(bool condition);
+    bool op_jp_condition_n16(bool condition);
     void op_jp_hl();
-    void op_call_condition_n16(bool condition);
-    void op_ret_condition(bool condition);
+    bool op_call_condition_n16(bool condition);
+    bool op_ret_condition(bool condition);
     void op_reti();
     void op_rst(uint16_t vector);
 
