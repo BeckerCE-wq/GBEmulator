@@ -673,6 +673,44 @@ void CPU::op_srl_hl(){
 
 // ---------------------------------- DECODE AND EXECUTE ----------------------------------------------
 
+uint8_t CPU::get_reg_value(uint code){
+    switch (code)
+    {
+        case 0: return b;
+        case 1: return c;
+        case 2: return d;
+        case 3: return e;
+        case 4: return h;
+        case 5: return l;
+        case 6: return read_byte(get_hl());
+        case 7: return a;
+        default: return 0;
+    }
+}
+
+void CPU::set_reg_value(uint8_t code, uint8_t value){
+    switch (code){
+        case 0: b = value; break;
+        case 1: c = value; break;
+        case 2: d = value; break;
+        case 3: e = value; break;
+        case 4: h = value; break;
+        case 5: l = value; break;
+        case 6: write_byte(get_hl(),value); break;
+        case 7: a = value; break;
+    }
+}
+
+uint8_t CPU::execute_ld_r8_r8(uint8_t opcode){
+    uint8_t src = opcode & 0x07;        // Bits 0-2 (Origen)
+    uint8_t dst = (opcode >> 3) & 0x07; // Bits 3-5 (Destino)
+
+    set_reg_value(dst, get_reg_value(src));
+
+    // Si involucra a [HL] (código 6), consume 2 M-Cycles. Si no, 1.
+    return (src == 6 || dst == 6) ? 2 : 1;
+}
+
 uint8_t CPU::decode_and_execute(uint8_t opcode){
     switch (opcode){
         case 0x00: op_nop(); return 1;
@@ -743,5 +781,8 @@ uint8_t CPU::decode_and_execute(uint8_t opcode){
         case 0x3E: op_ld_r8_imm8(a); return 2;
         case 0x3F: op_ccf(); return 1;
 
+        case 0x40 ... 0x75: return execute_ld_r8_r8(opcode);
+        case 0x76: op_halt(); return 1;
+        case 0x77 ... 0x7F: return execute_ld_r8_r8(opcode);
     }
 }

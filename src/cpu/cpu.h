@@ -37,6 +37,12 @@ private:
     uint16_t fetch_16();
     uint8_t decode_and_execute(uint8_t opcode);
 
+    // Unos pequeños helper para el decode...
+
+    uint8_t CPU::get_reg_value(uint code);
+    void CPU::set_reg_value(uint8_t code, uint8_t value);
+    uint8_t CPU::execute_ld_r8_r8(uint8_t opcode);
+
     // 5. Banderas (El registro 'f' solo usa 4 banderas)
     void set_flag_z(bool val); // Zero flag
     void set_flag_n(bool val); // Subtraction flag
