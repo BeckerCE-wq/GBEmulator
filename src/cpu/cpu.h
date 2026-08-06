@@ -37,11 +37,13 @@ private:
     uint16_t fetch_16();
     uint8_t decode_and_execute(uint8_t opcode);
 
-    // Unos pequeños helper para el decode...
+    // Unos pequeños helpers para el decode...
 
-    uint8_t CPU::get_reg_value(uint code);
-    void CPU::set_reg_value(uint8_t code, uint8_t value);
-    uint8_t CPU::execute_ld_r8_r8(uint8_t opcode);
+    uint8_t get_reg_value(uint code);
+    void set_reg_value(uint8_t code, uint8_t value);
+
+    uint8_t execute_ld_r8_r8(uint8_t opcode);
+    uint8_t execute_logic(uint8_t opcode);
 
     // 5. Banderas (El registro 'f' solo usa 4 banderas)
     void set_flag_z(bool val); // Zero flag
@@ -73,7 +75,6 @@ private:
     // BLOQUE LD
 
     void op_ld_r8_imm8(uint8_t& reg);
-    void op_ld_r8_r8(uint8_t& reg1, uint8_t& reg2);
     void op_ld_r8_r16mem(uint8_t& reg, uint16_t address);
 
     void op_ld_r16_imm16(uint8_t& reg_high, uint8_t& reg_low);
@@ -102,17 +103,17 @@ private:
     void op_dec_r16mem(uint16_t address);
     // BLOQUE LÓGICO
 
-    void op_or_r8(uint8_t reg);
-    void op_and_r8(uint8_t reg);
-    void op_xor_r8(uint8_t reg);
+    void op_or(uint8_t reg);
+    void op_and(uint8_t reg);
+    void op_xor(uint8_t reg);
 
     // BLOQUE ARITMETICO
 
-    void op_add_r8(uint8_t reg);
-    void op_sub_r8(uint8_t reg);
-    void op_addc_r8(uint8_t reg);
-    void op_sbc_r8(uint8_t reg);
-    void op_cp_r8(uint8_t reg);
+    void op_add(uint8_t reg);
+    void op_sub(uint8_t reg);
+    void op_addc(uint8_t reg);
+    void op_sbc(uint8_t reg);
+    void op_cp(uint8_t reg);
 
     void op_add_r16(uint16_t reg);
 

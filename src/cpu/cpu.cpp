@@ -74,14 +74,44 @@ uint16_t CPU::fetch_16(){
     return (high << 8) | low;
 }
 
+//----------------------------------------------HELPERS---------------------------------------------------------------------------
+
+uint8_t CPU::get_reg_value(uint code){
+    switch (code)
+    {
+        case 0: return b;
+        case 1: return c;
+        case 2: return d;
+        case 3: return e;
+        case 4: return h;
+        case 5: return l;
+        case 6: return read_byte(get_hl());
+        case 7: return a;
+        default: return 0;
+    }
+}
+
+void CPU::set_reg_value(uint8_t code, uint8_t value){
+    switch (code){
+        case 0: b = value; break;
+        case 1: c = value; break;
+        case 2: d = value; break;
+        case 3: e = value; break;
+        case 4: h = value; break;
+        case 5: l = value; break;
+        case 6: write_byte(get_hl(),value); break;
+        case 7: a = value; break;
+    }
+}
+
+
 // Instrucciones...
 
 void CPU::op_nop(){}
 
-//----------------------------------------BLOQUE LD----------------------------------------
+//----------------------------------------BLOQUE LD--------------------------------------------------------------------------------
 void CPU::op_ld_r8_imm8(uint8_t& reg){reg = fetch();} // LD X, n8.
 void CPU::op_ld_r8_r16mem(uint8_t& reg, uint16_t address){ reg = read_byte(address);} // LD X, [XX].
-void CPU::op_ld_r8_r8(uint8_t& reg1, uint8_t& reg2){reg1 = reg2;} // LD X, X.
 
 void CPU::op_ld_r16_imm16(uint8_t& reg_high, uint8_t& reg_low){ reg_low = fetch(); reg_high = fetch();} // LD XX, n16.
 void CPU::op_ld_r16mem_r8(uint16_t address, uint8_t& reg){ write_byte(address, reg);} // LD [XX], X.
@@ -179,7 +209,7 @@ void CPU::op_dec_r16mem(uint16_t address){
 
 // ----------------------------------------BLOQUE LÓGICO----------------------------------------
 
-void CPU::op_or_r8(uint8_t reg){
+void CPU::op_or(uint8_t reg){
     a |= reg;
 
     set_flag_z(a == 0);
@@ -188,7 +218,7 @@ void CPU::op_or_r8(uint8_t reg){
     set_flag_c(false);
 }
 
-void CPU::op_and_r8(uint8_t reg){
+void CPU::op_and(uint8_t reg){
     a &= reg;
 
     set_flag_z(a == 0);
@@ -197,7 +227,7 @@ void CPU::op_and_r8(uint8_t reg){
     set_flag_c(false);
 }
 
-void CPU::op_xor_r8(uint8_t reg){
+void CPU::op_xor(uint8_t reg){
     a ^= reg;
 
     set_flag_z(a == 0);
@@ -208,7 +238,7 @@ void CPU::op_xor_r8(uint8_t reg){
 
 // ----------------------------------------BLOQUE ARITMETICO----------------------------------------
 
-void CPU::op_add_r8(uint8_t reg){ // ADD A, X
+void CPU::op_add(uint8_t reg){ // ADD A, X
     int result = a + reg;
 
     bool half_carry = ((a & 0x0F) + (reg & 0x0F)) > 0x0F;
@@ -222,7 +252,7 @@ void CPU::op_add_r8(uint8_t reg){ // ADD A, X
     set_flag_c(carry);
 }
 
-void CPU::op_sub_r8(uint8_t reg){ // SUB A, X
+void CPU::op_sub(uint8_t reg){ // SUB A, X
     int result = a - reg;
 
     bool carry = reg > a;
@@ -236,7 +266,7 @@ void CPU::op_sub_r8(uint8_t reg){ // SUB A, X
     set_flag_c(carry);
 }
 
-void CPU::op_addc_r8(uint8_t reg){ // ADC A, X
+void CPU::op_addc(uint8_t reg){ // ADC A, X
     uint8_t carry_in = get_flag_c() ? 1 : 0;
 
     int result = a + reg + carry_in;
@@ -252,7 +282,7 @@ void CPU::op_addc_r8(uint8_t reg){ // ADC A, X
     set_flag_c(carry);
 }
 
-void CPU::op_sbc_r8(uint8_t reg){
+void CPU::op_sbc(uint8_t reg){
     uint8_t carry_in = get_flag_c() ? 1 : 0;
 
     int result = a - reg - carry_in;
@@ -269,7 +299,7 @@ void CPU::op_sbc_r8(uint8_t reg){
     set_flag_c(carry);
 }
 
-void CPU::op_cp_r8(uint8_t reg){
+void CPU::op_cp(uint8_t reg){
     uint8_t result = a - reg;
 
     bool carry = reg > a;
@@ -673,34 +703,6 @@ void CPU::op_srl_hl(){
 
 // ---------------------------------- DECODE AND EXECUTE ----------------------------------------------
 
-uint8_t CPU::get_reg_value(uint code){
-    switch (code)
-    {
-        case 0: return b;
-        case 1: return c;
-        case 2: return d;
-        case 3: return e;
-        case 4: return h;
-        case 5: return l;
-        case 6: return read_byte(get_hl());
-        case 7: return a;
-        default: return 0;
-    }
-}
-
-void CPU::set_reg_value(uint8_t code, uint8_t value){
-    switch (code){
-        case 0: b = value; break;
-        case 1: c = value; break;
-        case 2: d = value; break;
-        case 3: e = value; break;
-        case 4: h = value; break;
-        case 5: l = value; break;
-        case 6: write_byte(get_hl(),value); break;
-        case 7: a = value; break;
-    }
-}
-
 uint8_t CPU::execute_ld_r8_r8(uint8_t opcode){
     uint8_t src = opcode & 0x07;        // Bits 0-2 (Origen)
     uint8_t dst = (opcode >> 3) & 0x07; // Bits 3-5 (Destino)
@@ -709,6 +711,25 @@ uint8_t CPU::execute_ld_r8_r8(uint8_t opcode){
 
     // Si involucra a [HL] (código 6), consume 2 M-Cycles. Si no, 1.
     return (src == 6 || dst == 6) ? 2 : 1;
+}
+
+uint8_t CPU::execute_logic(uint8_t opcode){
+    uint8_t reg_code = opcode & 0x07;
+    uint8_t val = get_reg_value(reg_code);
+    uint8_t op = (opcode >> 3) & 0x07;
+
+    switch (op){
+        case 0: op_add(val); break;
+        case 1: op_addc(val); break;
+        case 2: op_sub(val); break;
+        case 3: op_sbc(val); break;
+        case 4: op_and(val); break;
+        case 5: op_xor(val); break;
+        case 6: op_or(val); break;
+        case 7: op_cp(val); break;
+    }
+
+    return (reg_code == 6) ? 2 : 1;
 }
 
 uint8_t CPU::decode_and_execute(uint8_t opcode){
@@ -784,5 +805,7 @@ uint8_t CPU::decode_and_execute(uint8_t opcode){
         case 0x40 ... 0x75: return execute_ld_r8_r8(opcode);
         case 0x76: op_halt(); return 1;
         case 0x77 ... 0x7F: return execute_ld_r8_r8(opcode);
+
+        case 0x80 ... 0xBF: return execute_logic(opcode);
     }
 }
